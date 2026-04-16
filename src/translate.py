@@ -1,8 +1,9 @@
 import re
+import asyncio
 import logging
 
-from tqdm import tqdm
-from bs4 import BeautifulSoup
+from tqdm.asyncio import tqdm
+from bs4 import BeautifulSoup, Tag
 
 from src.llm_client import GeminiClient
 
@@ -10,7 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class Translator:
-    def __init__(self, llm_model: str = "gemini-2.5-flash-lite") -> None:
+    def __init__(
+        self, llm_model: str = "gemini-2.5-flash-lite", concurrency: int = 1
+    ) -> None:
         self.llm_client = GeminiClient(model_name=llm_model)
         self.system_prompt = (
             "あなたは専門知識を有する優秀な論文翻訳者です。"
@@ -20,6 +23,7 @@ class Translator:
             "これらのプレースホルダーは一切変更・削除・追加せず、元の位置関係を維持してください。"
             "出力は翻訳結果のみとし、解説・注釈・前置き・後書きは一切含めないでください。"
         )
+        self.semaphore = asyncio.Semaphore(concurrency)
 
     @staticmethod
     def _protect_math(html: str) -> tuple[str, dict[str, str]]:
@@ -97,7 +101,29 @@ class Translator:
             html = html.replace(placeholder, img)
         return html
 
-    def translate(self, html: str) -> str:
+    async def _translate_p(self, p: Tag) -> None:
+        """1つの段落を翻訳する関数
+
+        Args:
+            p (Tag): <p>タグ
+        """
+        async with self.semaphore:
+            text: str = p.get_text()
+            try:
+                transleted: str | None = await self.llm_client.async_generate_text(
+                    prompt=text, system_prompt=self.system_prompt
+                )
+            except Exception as e:
+                logger.warning(f"LLMとの通信中にエラーが発生しました: {e}")
+                transleted = None
+
+            if transleted:
+                p.string = transleted
+            else:
+                logger.warning(f"パラグラフの翻訳に失敗しました: {text}")
+                p.string = text
+
+    async def translate(self, html: str) -> str:
         """HTMLソースを翻訳する関数
 
         Args:
@@ -114,16 +140,8 @@ class Translator:
         soup = BeautifulSoup(html, "html.parser")
 
         # テキストを翻訳
-        # TODO: 並列化して高速化
-        for p in tqdm(soup.find_all("p")):
-            original_text: str = p.get_text()
-            translated_text: str | None = self.llm_client.generate_text(
-                prompt=original_text, system_prompt=self.system_prompt
-            )
-            if translated_text:
-                p.string = translated_text
-            else:
-                logger.warning(f"Failed to translate paragraph: {original_text}")
+        tasks = [self._translate_p(p) for p in soup.find_all("p")]
+        await tqdm.gather(*tasks)
 
         # 数式と画像を復元
         translated_html: str = str(soup)

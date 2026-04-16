@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 import argparse
 
 from src.fetch_ar5iv import fetch_ar5iv_html
@@ -8,7 +9,7 @@ from src.translate import Translator
 logger = logging.getLogger(__name__)
 
 
-def main(arxiv_id: str) -> None:
+async def main(arxiv_id: str, model: str, concurrency: int) -> None:
     # loggerの設定
     logging.basicConfig(level=logging.WARNING)
 
@@ -20,8 +21,8 @@ def main(arxiv_id: str) -> None:
         html: str = f.read()
 
     # HTMLソースを翻訳
-    translator: Translator = Translator()
-    translated_html: str = translator.translate(html)
+    translator: Translator = Translator(llm_model=model, concurrency=concurrency)
+    translated_html: str = await translator.translate(html)
 
     # 論文のタイトルを取得
     title: str | None = translator.get_title(html)
@@ -44,7 +45,16 @@ if __name__ == "__main__":
     # コマンドライン引数の解析
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     parser.add_argument("arxiv_id", type=str, help="arXiv ID (例: 2101.00001)")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="gemini-2.5-flash-lite",
+        help="使用するGeminiモデルの名前 (デフォルト: gemini-2.5-flash-lite)",
+    )
+    parser.add_argument(
+        "--concurrency", type=int, default=1, help="翻訳の同時実行数 (デフォルト: 1)"
+    )
     args: argparse.Namespace = parser.parse_args()
 
     # 実行
-    main(args.arxiv_id.strip())
+    asyncio.run(main(args.arxiv_id, args.model, args.concurrency))

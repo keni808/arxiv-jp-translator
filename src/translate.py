@@ -24,6 +24,7 @@ class Translator:
             "出力は翻訳結果のみとし、解説・注釈・前置き・後書きは一切含めないでください。"
         )
         self.semaphore = asyncio.Semaphore(concurrency)
+        self.num_retries = 3
 
     @staticmethod
     def _protect_math(html: str) -> tuple[str, dict[str, str]]:
@@ -109,13 +110,16 @@ class Translator:
         """
         async with self.semaphore:
             text: str = p.get_text()
-            try:
-                transleted: str | None = await self.llm_client.async_generate_text(
-                    prompt=text, system_prompt=self.system_prompt
-                )
-            except Exception as e:
-                logger.warning(f"LLMとの通信中にエラーが発生しました: {e}")
-                transleted = None
+            for i in range(self.num_retries):
+                try:
+                    transleted: str | None = await self.llm_client.async_generate_text(
+                        prompt=text, system_prompt=self.system_prompt
+                    )
+                    break
+                except Exception as e:
+                    if i == self.num_retries - 1:
+                        logger.warning(f"LLMとの通信中にエラーが発生しました: {e}")
+                        transleted = None
 
             if transleted:
                 p.string = transleted

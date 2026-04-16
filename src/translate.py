@@ -4,7 +4,7 @@ import logging
 from tqdm import tqdm
 from bs4 import BeautifulSoup
 
-from llm_client import GeminiClient
+from src.llm_client import GeminiClient
 
 logger = logging.getLogger(__name__)
 

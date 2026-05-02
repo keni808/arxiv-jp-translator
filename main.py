@@ -46,13 +46,18 @@ if __name__ == "__main__":
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     parser.add_argument("arxiv_id", type=str, help="arXiv ID (例: 2101.00001)")
     parser.add_argument(
+        "-m",
         "--model",
         type=str,
         default="gemini-2.5-flash-lite",
         help="使用するGeminiモデルの名前 (デフォルト: gemini-2.5-flash-lite)",
     )
     parser.add_argument(
-        "--concurrency", type=int, default=1, help="翻訳の同時実行数 (デフォルト: 1)"
+        "-c",
+        "--concurrency",
+        type=int,
+        default=1,
+        help="翻訳の同時実行数 (デフォルト: 1)",
     )
     args: argparse.Namespace = parser.parse_args()
 

@@ -1,10 +1,11 @@
-import os
 import logging
 import asyncio
 import argparse
+from pathlib import Path
 
 from src.fetch_ar5iv import fetch_ar5iv_html
 from src.translate import Translator
+from src.sanitize import sanitize_title
 
 logger = logging.getLogger(__name__)
 
@@ -14,10 +15,14 @@ async def main(arxiv_id: str, model: str, concurrency: int) -> None:
     logging.basicConfig(level=logging.WARNING)
 
     # ar5iv.orgからHTMLソースを取得して保存
+    save_dir = Path("./data/en")
     fetch_ar5iv_html(arxiv_id)
 
     # 保存したHTMLソースを読み込む
-    with open(f"./data/en/{arxiv_id}.html", "r", encoding="utf-8") as f:
+    en_path: Path = save_dir / f"{arxiv_id}.html"
+    if not en_path.exists():
+        raise FileNotFoundError(f"HTMLファイルが見つかりません: {en_path}")
+    with open(en_path, "r", encoding="utf-8") as f:
         html: str = f.read()
 
     # HTMLソースを翻訳
@@ -25,19 +30,19 @@ async def main(arxiv_id: str, model: str, concurrency: int) -> None:
     translated_html: str = await translator.translate(html)
 
     # 論文のタイトルを取得
-    title: str | None = translator.get_title(html)
-    file_name: str
-    if title:
-        file_name = f"./data/ja/{title}.html"
+    title: str = sanitize_title(translator.get_title(html))
+    ja_path: Path
+    if title.strip() != "":
+        ja_path = Path(f"./data/ja/{title}.html")
     else:
         logger.warning(
             f"論文のタイトルの取得に失敗したため、ファイル名にarXiv IDのみを使用します: {arxiv_id}"
         )
-        file_name = f"./data/ja/{arxiv_id}.html"
+        ja_path = Path(f"./data/ja/{arxiv_id}.html")
 
     # 翻訳されたHTMLソースを保存
-    os.makedirs("./data/ja/", exist_ok=True)
-    with open(file_name, "w", encoding="utf-8") as f:
+    ja_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(ja_path, "w", encoding="utf-8") as f:
         f.write(translated_html)
 
 
@@ -49,15 +54,15 @@ if __name__ == "__main__":
         "-m",
         "--model",
         type=str,
-        default="gemini-2.5-flash-lite",
-        help="使用するGeminiモデルの名前 (デフォルト: gemini-2.5-flash-lite)",
+        default="gemini-3.1-flash-lite",
+        help="使用するGeminiモデルの名前 (デフォルト: gemini-3.1-flash-lite)",
     )
     parser.add_argument(
         "-c",
         "--concurrency",
         type=int,
-        default=1,
-        help="翻訳の同時実行数 (デフォルト: 1)",
+        default=3,
+        help="翻訳の同時実行数 (デフォルト: 3)",
     )
     args: argparse.Namespace = parser.parse_args()
 

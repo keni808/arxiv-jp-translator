@@ -1,24 +1,24 @@
-import os
 import logging
 import requests
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
-def fetch_ar5iv_html(arxiv_id: str, save_dir: str = "./data/en/") -> None:
+def fetch_ar5iv_html(arxiv_id: str, save_dir: Path = Path("./data/en/")) -> None:
     """arXiv IDに対応するar5iv.orgのHTMLソースを取得して保存する関数
 
     Args:
         arxiv_id (str): arXiv ID (例: "2101.00001")
-        save_dir (str): 保存先ディレクトリ (デフォルト: "./data/en/")
+        save_dir (Path): 保存先ディレクトリ (デフォルト: "./data/en/")
     """
 
     # 保存先の設定
-    os.makedirs(save_dir, exist_ok=True)
-    path: str = os.path.join(save_dir, f"{arxiv_id}.html")
+    save_dir.mkdir(parents=True, exist_ok=True)
+    path: Path = save_dir / f"{arxiv_id}.html"
 
     # すでに保存されている場合はスキップ
-    if os.path.exists(path):
+    if path.exists():
         logger.info(
             f'arXiv ID "{arxiv_id}"のHTMLソースは既に取得済みため、スキップします: {path}'
         )

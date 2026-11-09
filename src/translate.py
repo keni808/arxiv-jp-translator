@@ -27,6 +27,7 @@ class Translator:
             "識別子は入力に存在するものだけを使用し、新しい識別子を生成しないでください。"
             "文中の図表への参照は識別子に置き換えず、通常の文章として翻訳してください。"
             "例えば Fig. 1 や Figure 1 は「図1」、Table 1 は「表1」と訳し、参照番号を保持してください。"
+            "キャプションの図表番号やアルゴリズム番号も、番号自体を変更せずに保持してください。"
             "識別子を数式・画像の内容や説明文に置き換えず、元の段落内に保持してください。"
             "日本語の語順に合わせる場合も、識別子とそれを説明する語句の対応を維持してください。"
             "入力が識別子だけの場合は、そのまま出力してください。"
@@ -112,14 +113,14 @@ class Translator:
             html = html.replace(placeholder, img)
         return html
 
-    async def _translate_p(self, p: Tag) -> None:
-        """1つの段落を翻訳する関数
+    async def _translate_element(self, element: Tag) -> None:
+        """1つの段落またはキャプションを翻訳する関数
 
         Args:
-            p (Tag): <p>タグ
+            element (Tag): <p>または<figcaption>タグ
         """
         async with self.semaphore:
-            text: str = p.get_text()
+            text: str = element.get_text()
             for i in range(self.num_retries):
                 try:
                     transleted: str | None = await self.llm_client.async_generate_text(
@@ -132,17 +133,17 @@ class Translator:
                         transleted = None
 
             if transleted:
-                p.string = transleted
+                element.string = transleted
             else:
-                logger.warning(f"パラグラフの翻訳に失敗しました: {text}")
-                p.string = text
+                logger.warning(f"テキストの翻訳に失敗しました: {text}")
+                element.string = text
 
     async def translate(self, html: str, skip_appendix: bool = False) -> str:
         """HTMLソースを翻訳する関数
 
         Args:
             html (str): HTMLソース
-            skip_appendix (bool): Appendix内の段落を原文のまま残す。
+            skip_appendix (bool): Appendix内の段落とキャプションを原文のまま残す。
 
         Returns:
             str: 翻訳されたHTMLソース
@@ -154,16 +155,23 @@ class Translator:
         # HTMLをパース
         soup = BeautifulSoup(html, "html.parser")
 
-        # 段落を取得
-        paragraphs = list(soup.find_all("p"))
-        # skip_appendixがTrueの場合、Appendix内の段落を除外
+        # 段落とキャプションを抽出
+        paragraphs = [
+            p for p in soup.find_all("p") if p.find_parent("figcaption") is None
+        ]
+        captions = list(soup.find_all("figcaption"))
+        elements = paragraphs + captions
+
+        # skip_appendixがTrueの場合、Appendix内の段落とキャプションを除外
         if skip_appendix:
-            paragraphs = [
-                p for p in paragraphs if p.find_parent(class_="ltx_appendix") is None
+            elements = [
+                element
+                for element in elements
+                if element.find_parent(class_="ltx_appendix") is None
             ]
 
         # テキストを翻訳
-        tasks = [self._translate_p(p) for p in paragraphs]
+        tasks = [self._translate_element(element) for element in elements]
         await tqdm.gather(*tasks)
 
         # 数式と画像を復元

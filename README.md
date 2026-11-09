@@ -31,7 +31,6 @@ Appendixを翻訳せず、原文のまま残す場合は `--skip-appendix` を�
 ```bash
 uv run main.py <arxiv_id> --skip-appendix
 ```
-省略した場合はAppendixも翻訳します。判定対象はHTMLの `ltx_appendix` クラスを持つ要素の配下です。見出しの文字列だけで表現された付録は判定しません。
 
 ## 注意点
 本ツールは ar5iv（arXiv のミラーサービス）の HTML ページを自動取得して利用しています。

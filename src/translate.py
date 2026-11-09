@@ -5,16 +5,14 @@ import logging
 from tqdm.asyncio import tqdm
 from bs4 import BeautifulSoup, Tag
 
-from src.llm_client import GeminiClient
+from src.llm_client import LLMClient
 
 logger = logging.getLogger(__name__)
 
 
 class Translator:
-    def __init__(
-        self, llm_model: str = "gemini-2.5-flash-lite", concurrency: int = 1
-    ) -> None:
-        self.llm_client = GeminiClient(model_name=llm_model)
+    def __init__(self, llm_client: LLMClient, concurrency: int = 1) -> None:
+        self.llm_client = llm_client
         self.system_prompt = (
             "あなたは専門知識を有する優秀な論文翻訳者です。"
             "入力された文章を日本語に翻訳してください。"

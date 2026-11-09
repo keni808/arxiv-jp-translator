@@ -1,5 +1,5 @@
 # arxiv-ja-translator
-arXiv論文をGeminiを用いて日本語に翻訳するツールです。
+arXiv論文をGeminiまたはSarashinaを用いて日本語に翻訳するツールです。
 arXiv IDを指定することで日本語に翻訳されたHTMLを出力します。
 
 ## 使い方
@@ -17,14 +17,15 @@ uv sync
 ```bash
 copy .env.example .env
 ```
-この後、`.env`ファイルを開いて、`GOOGLE_API_KEY`にAPIキーを記載します。
+この後、`.env`ファイルを開いて、APIキーを記載します。
 
 4. `main.py`を実行して、翻訳したいarXiv IDを指定します。
 ```bash
-uv run main.py <arxiv_id> --model <llm_model> --concurrency <concurrency> --skip-appendix
+uv run main.py <arxiv_id> --provider <provider> --model <llm_model> --concurrency <concurrency> --skip-appendix
 ```
 - `<arxiv_id>`: 翻訳したい論文のarXiv IDを指定します（例: `2101.00001`）。
-- `--model <llm_model>`: 使用するLLMモデルを指定します（例: `gemini-3.1-flash-lite`）。省略した場合はデフォルトで `gemini-3.1-flash-lite` が使用されます。
+- `--provider <provider>`: `gemini`または`sarashina`を指定します。省略時は`gemini`です。
+- `--model <llm_model>`: 使用するLLMモデルを指定します。省略時はproviderに応じて、Geminiでは`gemini-3.1-flash-lite`、Sarashinaでは`sarashina3-nano`を使用します。
 - `--concurrency <concurrency>`: 同時に処理する翻訳の数を指定します。省略した場合はデフォルトで `3` が使用されます。レート制限に注意して設定してください。
 - `--skip-appendix`: このオプションを指定すると、Appendix内の段落とキャプションは翻訳されません。
 

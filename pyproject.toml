@@ -8,6 +8,7 @@ dependencies = [
     "bs4>=0.0.2",
     "dotenv>=0.9.9",
     "google-genai>=1.73.1",
+    "httpx>=0.28.1",
     "tqdm>=4.67.3",
 ]
 

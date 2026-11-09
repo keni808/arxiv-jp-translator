@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 
 [[package]]
@@ -32,6 +32,7 @@ dependencies = [
     { name = "bs4" },
     { name = "dotenv" },
     { name = "google-genai" },
+    { name = "httpx" },
     { name = "tqdm" },
 ]
 
@@ -48,6 +49,7 @@ requires-dist = [
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "google-genai", specifier = ">=1.73.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "tqdm", specifier = ">=4.67.3" },
 ]
 

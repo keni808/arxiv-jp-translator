@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from src.fetch_ar5iv import fetch_ar5iv_html
+from src.llm_client import GeminiClient, LLMClient, SarashinaClient
 from src.translate import Translator
 from src.sanitize import sanitize_title
 
@@ -11,7 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 async def main(
-    arxiv_id: str, model: str, concurrency: int, skip_appendix: bool = False
+    arxiv_id: str,
+    model: str | None,
+    concurrency: int,
+    skip_appendix: bool = False,
+    provider: str = "gemini",
 ) -> None:
     # loggerの設定
     logging.basicConfig(level=logging.WARNING)
@@ -28,7 +33,18 @@ async def main(
         html: str = f.read()
 
     # HTMLソースを翻訳
-    translator: Translator = Translator(llm_model=model, concurrency=concurrency)
+    llm_client: LLMClient
+    if provider == "gemini":
+        if model is None:
+            model = "gemini-3.1-flash-lite"
+        llm_client = GeminiClient(model_name=model)
+    elif provider == "sarashina":
+        if model is None:
+            model = "sarashina3-nano"
+        llm_client = SarashinaClient(model_name=model)
+    else:
+        raise ValueError(f"未対応のproviderです: {provider}")
+    translator: Translator = Translator(llm_client=llm_client, concurrency=concurrency)
     translated_html: str = await translator.translate(html, skip_appendix=skip_appendix)
 
     # 論文のタイトルを取得
@@ -53,11 +69,17 @@ if __name__ == "__main__":
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     parser.add_argument("arxiv_id", type=str, help="arXiv ID (例: 2101.00001)")
     parser.add_argument(
+        "--provider",
+        choices=["gemini", "sarashina"],
+        default="gemini",
+        help="使用するLLMプロバイダー (デフォルト: gemini)",
+    )
+    parser.add_argument(
         "-m",
         "--model",
         type=str,
-        default="gemini-3.1-flash-lite",
-        help="使用するGeminiモデルの名前 (デフォルト: gemini-3.1-flash-lite)",
+        default=None,
+        help="使用するモデルの名前 (省略時: geminiはgemini-3.1-flash-lite、sarashinaはsarashina3-nano)",
     )
     parser.add_argument(
         "-c",
@@ -74,4 +96,12 @@ if __name__ == "__main__":
     args: argparse.Namespace = parser.parse_args()
 
     # 実行
-    asyncio.run(main(args.arxiv_id, args.model, args.concurrency, args.skip_appendix))
+    asyncio.run(
+        main(
+            args.arxiv_id,
+            args.model,
+            args.concurrency,
+            skip_appendix=args.skip_appendix,
+            provider=args.provider,
+        )
+    )

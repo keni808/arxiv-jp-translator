@@ -24,7 +24,7 @@ copy .env.example .env
 uv run main.py <arxiv_id> --model <llm_model> --concurrency <concurrency>
 ```
 - `<arxiv_id>`: 翻訳したい論文のarXiv IDを指定します（例: `2101.00001`）。
-- `--model <llm_model>`: 使用するLLMモデルを指定します（例: `gemini-2.5-flash-lite`）。省略した場合はデフォルトで `gemini-2.5-flash-lite` が使用されます。
+- `--model <llm_model>`: 使用するLLMモデルを指定します（例: `gemini-3.1-flash-lite`）。省略した場合はデフォルトで `gemini-3.1-flash-lite` が使用されます。
 - `--concurrency <concurrency>`: 同時に処理する翻訳の数を指定します。省略した場合はデフォルトで `1` が使用されます。レート制限に注意して設定してください。
 
 Appendixを翻訳せず、原文のまま残す場合は `--skip-appendix` を指定します。

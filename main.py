@@ -10,7 +10,9 @@ from src.sanitize import sanitize_title
 logger = logging.getLogger(__name__)
 
 
-async def main(arxiv_id: str, model: str, concurrency: int) -> None:
+async def main(
+    arxiv_id: str, model: str, concurrency: int, skip_appendix: bool = False
+) -> None:
     # loggerの設定
     logging.basicConfig(level=logging.WARNING)
 
@@ -27,7 +29,7 @@ async def main(arxiv_id: str, model: str, concurrency: int) -> None:
 
     # HTMLソースを翻訳
     translator: Translator = Translator(llm_model=model, concurrency=concurrency)
-    translated_html: str = await translator.translate(html)
+    translated_html: str = await translator.translate(html, skip_appendix=skip_appendix)
 
     # 論文のタイトルを取得
     title: str = sanitize_title(translator.get_title(html))
@@ -64,7 +66,12 @@ if __name__ == "__main__":
         default=3,
         help="翻訳の同時実行数 (デフォルト: 3)",
     )
+    parser.add_argument(
+        "--skip-appendix",
+        action="store_true",
+        help="Appendix内の段落を翻訳せず原文のまま残す",
+    )
     args: argparse.Namespace = parser.parse_args()
 
     # 実行
-    asyncio.run(main(args.arxiv_id, args.model, args.concurrency))
+    asyncio.run(main(args.arxiv_id, args.model, args.concurrency, args.skip_appendix))

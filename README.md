@@ -27,6 +27,12 @@ uv run main.py <arxiv_id> --model <llm_model> --concurrency <concurrency>
 - `--model <llm_model>`: 使用するLLMモデルを指定します（例: `gemini-2.5-flash-lite`）。省略した場合はデフォルトで `gemini-2.5-flash-lite` が使用されます。
 - `--concurrency <concurrency>`: 同時に処理する翻訳の数を指定します。省略した場合はデフォルトで `1` が使用されます。レート制限に注意して設定してください。
 
+Appendixを翻訳せず、原文のまま残す場合は `--skip-appendix` を指定します。
+```bash
+uv run main.py <arxiv_id> --skip-appendix
+```
+省略した場合はAppendixも翻訳します。判定対象はHTMLの `ltx_appendix` クラスを持つ要素の配下です。見出しの文字列だけで表現された付録は判定しません。
+
 ## 注意点
 本ツールは ar5iv（arXiv のミラーサービス）の HTML ページを自動取得して利用しています。
 

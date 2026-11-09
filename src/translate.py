@@ -137,11 +137,12 @@ class Translator:
                 logger.warning(f"パラグラフの翻訳に失敗しました: {text}")
                 p.string = text
 
-    async def translate(self, html: str) -> str:
+    async def translate(self, html: str, skip_appendix: bool = False) -> str:
         """HTMLソースを翻訳する関数
 
         Args:
             html (str): HTMLソース
+            skip_appendix (bool): Appendix内の段落を原文のまま残す。
 
         Returns:
             str: 翻訳されたHTMLソース
@@ -153,8 +154,16 @@ class Translator:
         # HTMLをパース
         soup = BeautifulSoup(html, "html.parser")
 
+        # 段落を取得
+        paragraphs = list(soup.find_all("p"))
+        # skip_appendixがTrueの場合、Appendix内の段落を除外
+        if skip_appendix:
+            paragraphs = [
+                p for p in paragraphs if p.find_parent(class_="ltx_appendix") is None
+            ]
+
         # テキストを翻訳
-        tasks = [self._translate_p(p) for p in soup.find_all("p")]
+        tasks = [self._translate_p(p) for p in paragraphs]
         await tqdm.gather(*tasks)
 
         # 数式と画像を復元

@@ -21,16 +21,12 @@ copy .env.example .env
 
 4. `main.py`を実行して、翻訳したいarXiv IDを指定します。
 ```bash
-uv run main.py <arxiv_id> --model <llm_model> --concurrency <concurrency>
+uv run main.py <arxiv_id> --model <llm_model> --concurrency <concurrency> --skip-appendix
 ```
 - `<arxiv_id>`: 翻訳したい論文のarXiv IDを指定します（例: `2101.00001`）。
 - `--model <llm_model>`: 使用するLLMモデルを指定します（例: `gemini-3.1-flash-lite`）。省略した場合はデフォルトで `gemini-3.1-flash-lite` が使用されます。
-- `--concurrency <concurrency>`: 同時に処理する翻訳の数を指定します。省略した場合はデフォルトで `1` が使用されます。レート制限に注意して設定してください。
-
-Appendixを翻訳せず、原文のまま残す場合は `--skip-appendix` を指定します。
-```bash
-uv run main.py <arxiv_id> --skip-appendix
-```
+- `--concurrency <concurrency>`: 同時に処理する翻訳の数を指定します。省略した場合はデフォルトで `3` が使用されます。レート制限に注意して設定してください。
+- `--skip-appendix`: このオプションを指定すると、Appendix内の段落とキャプションは翻訳されません。
 
 ## 注意点
 本ツールは ar5iv（arXiv のミラーサービス）の HTML ページを自動取得して利用しています。

@@ -27,6 +27,7 @@ uv run main.py <arxiv_id> --provider <provider> --model <llm_model> --concurrenc
 - `--provider <provider>`: `gemini`または`sarashina`を指定します。省略時は`gemini`です。
 - `--model <llm_model>`: 使用するLLMモデルを指定します。省略時はproviderに応じて、Geminiでは`gemini-3.1-flash-lite`、Sarashinaでは`sarashina3-nano`を使用します。
 - `--concurrency <concurrency>`: 同時に処理する翻訳の数を指定します。省略した場合はデフォルトで `3` が使用されます。レート制限に注意して設定してください。
+- `--request-interval <seconds>`: APIリクエストの最小開始間隔（秒）を指定します。省略時は`0`秒です。
 - `--skip-appendix`: このオプションを指定すると、Appendix内の段落とキャプションは翻訳されません。
 
 ## 注意点

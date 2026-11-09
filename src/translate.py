@@ -11,7 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class Translator:
-    def __init__(self, llm_client: LLMClient, concurrency: int = 1) -> None:
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        concurrency: int = 1,
+        request_interval: float = 0.0,
+    ) -> None:
         self.llm_client = llm_client
         self.system_prompt = (
             "あなたは専門知識を有する優秀な論文翻訳者です。"
@@ -33,6 +38,9 @@ class Translator:
             "出力は翻訳結果のみとし、解説・注釈・前置き・後書きは一切含めないでください。"
         )
         self.semaphore = asyncio.Semaphore(concurrency)
+        self.request_interval = request_interval
+        self._request_lock = asyncio.Lock()
+        self._next_request_time = 0.0
         self.num_retries = 3
 
     @staticmethod
@@ -111,6 +119,18 @@ class Translator:
             html = html.replace(placeholder, img)
         return html
 
+    async def _wait_for_request(self) -> None:
+        """並列処理と再試行で共有するリクエスト開始間隔を確保する関数"""
+        if self.request_interval == 0:
+            return
+
+        async with self._request_lock:
+            loop = asyncio.get_running_loop()
+            wait_time = self._next_request_time - loop.time()
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+            self._next_request_time = loop.time() + self.request_interval
+
     async def _translate_element(self, element: Tag) -> None:
         """1つの段落またはキャプションを翻訳する関数
 
@@ -120,6 +140,7 @@ class Translator:
         async with self.semaphore:
             text: str = element.get_text()
             for i in range(self.num_retries):
+                await self._wait_for_request()
                 try:
                     transleted: str | None = await self.llm_client.async_generate_text(
                         prompt=text, system_prompt=self.system_prompt
